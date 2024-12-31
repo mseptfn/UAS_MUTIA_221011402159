@@ -1,0 +1,37 @@
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+# Variabel Input
+kecepatan = ctrl.Antecedent(np.arange(0, 11, 1), 'kecepatan')
+kualitas = ctrl.Antecedent(np.arange(0, 11, 1), 'kualitas')
+suasana = ctrl.Antecedent(np.arange(0, 11, 1), 'suasana')
+
+# Variabel Output
+kebahagiaan = ctrl.Consequent(np.arange(0, 11, 1), 'kebahagiaan')
+
+# Fuzzification
+kecepatan.automf(3)  # lambat, sedang, cepat
+kualitas.automf(3)   # buruk, baik, sangat baik
+suasana.automf(3)    # buruk, nyaman, sangat nyaman
+
+kebahagiaan['tidak puas'] = fuzz.trimf(kebahagiaan.universe, [0, 0, 5])
+kebahagiaan['cukup puas'] = fuzz.trimf(kebahagiaan.universe, [0, 5, 10])
+kebahagiaan['sangat puas'] = fuzz.trimf(kebahagiaan.universe, [5, 10, 10])
+
+# Rules
+rule1 = ctrl.Rule(kecepatan['poor'] | kualitas['poor'] | suasana['poor'], kebahagiaan['tidak puas'])
+rule2 = ctrl.Rule(kecepatan['average'] & kualitas['average'] & suasana['average'], kebahagiaan['cukup puas'])
+rule3 = ctrl.Rule(kecepatan['good'] & kualitas['good'] & suasana['good'], kebahagiaan['sangat puas'])
+
+# Sistem Kontrol
+kebahagiaan_ctrl = ctrl.ControlSystem([rule1, rule2, rule3])
+kebahagiaan_sim = ctrl.ControlSystemSimulation(kebahagiaan_ctrl)
+
+# Simulasi
+kebahagiaan_sim.input['kecepatan'] = 7
+kebahagiaan_sim.input['kualitas'] = 8
+kebahagiaan_sim.input['suasana'] = 6
+kebahagiaan_sim.compute()
+
+print(f"Tingkat Kebahagiaan Pelanggan: {kebahagiaan_sim.output['kebahagiaan']:.2f}")
